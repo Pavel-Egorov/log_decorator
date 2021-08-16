@@ -1,0 +1,8 @@
+**/.cache/
+**/htmlcov/
+**/.coverage
+**/.pytest_cache
+**/dist/
+**/build/
+**/*.egg-info/
+**/reports/
