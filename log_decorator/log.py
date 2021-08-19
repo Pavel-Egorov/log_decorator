@@ -142,29 +142,33 @@ def _hide_items(item, item_name, annotations, hidden_params):
     if item_name in hidden_params:
         return HIDDEN_VALUE
 
-    annotation = annotations.get(item_name)
-    hide_annotation = annotation
-    if annotation is None or isinstance(annotation, type):
+    item_annotation = annotations.get(item_name)
+
+    if item_annotation is None or isinstance(item_annotation, type):
         hide_annotation = []
+    elif isinstance(item_annotation, str):
+        hide_annotation = [item_annotation]
+    else:
+        hide_annotation = item_annotation
 
-    if isinstance(hide_annotation, str):
-        hide_annotation = [hide_annotation]
-
-    hidden_pointers = []
+    hide_pointers = []
     for i in hide_annotation:
         if i == HIDE_ANNOTATION:
             return HIDDEN_VALUE
         if re.match(HIDE_ANNOTATION, str(i)):
-            hidden_pointers.append(i.split('__')[1:])
+            hide_pointers.append(i.split('__')[1:])
 
     for i in hidden_params:
         if re.match(item_name, i):
             pointer = i.split('__')[1:]
-            if pointer not in hidden_pointers:
-                hidden_pointers.append(pointer)
+            if pointer not in hide_pointers:
+                hide_pointers.append(pointer)
+
+    if not hide_pointers:
+        return item
 
     result = deepcopy(item)
-    for i in hidden_pointers:
+    for i in hide_pointers:
         try:
             result = _hide_items_impl(result, i)
         except (KeyError, IndexError):
@@ -176,7 +180,7 @@ def _hide_items(item, item_name, annotations, hidden_params):
 def _hide_items_impl(item, pointers):
     pointer = pointers[0]
     if isinstance(item, list):
-        pointer = int(pointers[0])
+        pointer = int(pointer)
 
     if (isinstance(item[pointer], dict) or isinstance(item[pointer], list)) and len(pointers) > 1:
         item[pointer] = _hide_items_impl(item[pointer], pointers[1:])

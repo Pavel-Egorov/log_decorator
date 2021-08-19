@@ -13,7 +13,7 @@ REQUIREMENTS
 INSTALLATION
 ---
 
-    pip install log_decorator
+    pip install verbose-log-decorator
 
 OVERVIEW
 ---
@@ -172,9 +172,10 @@ TESTING
 ---
 
 The package has built-in unittests with 100% coverage, to run them:
-1. Install test dependencies: `pip install pytest pytest-cov`
-2. Run tests and generate HTML coverage report: `pytest --cov-report html --cov=log_decorator`
-3. Review results in `htmlcov/index.html`
+1. Clone repository.
+2. Install test dependencies: `pip install pytest pytest-asyncio pytest-cov`
+3. Run tests and generate HTML coverage report: `pytest --cov-report html --cov=log_decorator`
+4. Review results in `htmlcov/index.html`
 
 CONTRIBUTE
 ---

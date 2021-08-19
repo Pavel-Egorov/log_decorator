@@ -51,7 +51,7 @@ class LogFormatter(logging.Formatter):
 
         keys_to_log = self.limit_keys_to if self.limit_keys_to is not None else list(record_data)
         for i in keys_to_log:
-            value = record_data.pop(i, None)
+            value = record_data.get(i)
             if value is not None:
                 try:
                     prepared_value = json.dumps(value, indent=2)

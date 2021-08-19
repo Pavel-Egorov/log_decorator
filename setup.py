@@ -11,15 +11,13 @@ def read(path):
         return ''
 
 
-PACKAGE = 'log_decorator'
-
 if __name__ == '__main__':
     setup(
-        name=PACKAGE,
+        name='verbose_log_decorator',
         description='decorators to log function calls in verbose manner',
         license='Apache',
         url='https://github.com/Pavel-Egorov/log_decorator',
-        version='1.0.1',
+        version='1.0.0',
         author='Pavel Egorov',
         author_email='paveg.sp@gmail.com',
         maintainer='Pavel Egorov',
@@ -27,7 +25,7 @@ if __name__ == '__main__':
         keywords=['logging'],
         long_description=read('README.md'),
         long_description_content_type='text/markdown',
-        packages=[PACKAGE, f'{PACKAGE}.test'],
+        packages=['log_decorator'],
         zip_safe=False,
         classifiers=[
             'Development Status :: 5 - Production/Stable',
