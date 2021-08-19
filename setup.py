@@ -17,7 +17,7 @@ if __name__ == '__main__':
         description='decorators to log function calls in verbose manner',
         license='Apache',
         url='https://github.com/Pavel-Egorov/log_decorator',
-        version='1.0.0',
+        version='1.0.1',
         author='Pavel Egorov',
         author_email='paveg.sp@gmail.com',
         maintainer='Pavel Egorov',
