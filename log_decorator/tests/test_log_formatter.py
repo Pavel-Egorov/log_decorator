@@ -1,7 +1,7 @@
 import logging
 from unittest import TestCase
 
-from log_decorator.log_formatter import LogFormatter
+from log_decorator.log_formatter import LogFormatter, FormatterMode
 
 TEST_VERBOSE_RESULT_1 = '''test msg
 
@@ -54,25 +54,25 @@ RESULT:
 class TestLogFormatter(TestCase):
     def test_wrong_formatter_mode(self):
         with self.assertRaises(Exception):
-            LogFormatter(formatter_mode='test')
+            LogFormatter(formatter_mode='test')  # noqa
 
     def test_compact_formatter(self):
-        test_formatter = LogFormatter(formatter_mode='compact')
+        test_formatter = LogFormatter(formatter_mode=FormatterMode.COMPACT)
         result = test_formatter.format(self._get_record_mock())
         self.assertEqual(result, "test msg {'input_data': {'test': '123'}, 'result': {'1'}}")
 
-        test_formatter = LogFormatter(formatter_mode='compact', limit_keys_to=['test'])
+        test_formatter = LogFormatter(formatter_mode=FormatterMode.COMPACT, limit_keys_to=['test'])
         result = test_formatter.format(self._get_record_mock())
         self.assertEqual(result, "test msg {'test': {}}")
 
-        test_formatter = LogFormatter(formatter_mode='compact', limit_keys_to=None)
+        test_formatter = LogFormatter(formatter_mode=FormatterMode.COMPACT, limit_keys_to=None)
         test_formatter.format(self._get_record_mock())
 
-        test_formatter = LogFormatter(formatter_mode='compact', max_length=10)
+        test_formatter = LogFormatter(formatter_mode=FormatterMode.COMPACT, max_length=10)
         result = test_formatter.format(self._get_record_mock())
-        self.assertEqual(result, 'test msg {...')
+        self.assertEqual(result, 'test ms...')
 
-        test_formatter = LogFormatter(formatter_mode='compact', max_length=57)
+        test_formatter = LogFormatter(formatter_mode=FormatterMode.COMPACT, max_length=57)
         result = test_formatter.format(self._get_record_mock())
         self.assertEqual(result, "test msg {'input_data': {'test': '123'}, 'result': {'1'}}")
 
@@ -90,7 +90,7 @@ class TestLogFormatter(TestCase):
 
         test_formatter = LogFormatter(max_length=10)
         result = test_formatter.format(self._get_record_mock())
-        self.assertEqual(result, f'{TEST_VERBOSE_RESULT_2[:10]}...')
+        self.assertEqual(result, f'{TEST_VERBOSE_RESULT_2[:7]}...')
 
         test_formatter = LogFormatter(separator='\n\n')
         result = test_formatter.format(self._get_record_mock())

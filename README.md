@@ -80,15 +80,15 @@ This class can be used as regular log formatters from standard library, but has 
 
 ```
 class LogFormatter(
-   formatter_mode: str = 'verbose',
-   limit_keys_to: Iterable[str] or None = ('input_data', 'result'),
-   max_length: int or None = 10000,
-   separator: str or None = f'\n\n{"=" * 50}\n\n',
-   **kwargs,
+    formatter_mode: FormatterMode = FormatterMode.VERBOSE,
+    limit_keys_to: Optional[Iterable] = ('input_data', 'result'),
+    max_length: Optional[int] = DEFAULT_MAX_LOG_LENGTH,
+    separator: str = DEFAULT_SEPARATOR,
+    **kwargs,
 )
 ``` 
 
-- `formatter_mode` - either `verbose` or `compact`:
+- `formatter_mode` - either `FormatterMode.COMPACT` or `FormatterMode.VERBOSE` (default):
   - in `verbose` mode logs will be formatted in human-readable way with new lines, separators etc., this mode is 
     recommended for external log storage/explorer such as Graylog.
   - in `compact` mode logs will be formatted as single-line records (except exceptions), this mode is recommended for 
@@ -157,15 +157,12 @@ Look at sync log for signature description, the only difference is that exceptio
 ---
 
 Additional features:
-1. It is possible to use annotations to hide some args or their parts from log, to do it just use `HIDE_ANNOTATION` 
-   from the `log` to annotate desired parameter. To hide part of an argument use e.g. `hide__key__1` annotation. To 
-   hide multiple parts pass list of strings as annotation.
-2. It is possible to define `get_log_id` method for your classes to represent them in logs in some special way. This 
+1. It is possible to define `get_log_id` method for your classes to represent them in logs in some special way. This 
    method will be called without arguments except of class instance or class itself (in case of passing class itself 
    to the logged function).
-3. Each log record will contain `call_id` parameter which will be equal for call, return and exception records of 
+2. Each log record will contain `call_id` parameter which will be equal for call, return and exception records of 
    the same call, it is to simplify logs reading and understanding their relations.
-4. If an exception will be raised during function call and its instance will have `return_value` attribute then 
+3. If an exception will be raised during function call and its instance will have `return_value` attribute then 
    exception will be logged, but not reraised, instead the value of this attribute will be returned.
 
 TESTING

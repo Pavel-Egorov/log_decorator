@@ -2,8 +2,6 @@ import logging
 import unittest
 from unittest.mock import ANY, AsyncMock, MagicMock
 
-import pytest
-
 from log_decorator import async_log, log
 
 
@@ -13,9 +11,8 @@ class TestAsyncLog(unittest.IsolatedAsyncioTestCase):
 
         self.logger_inst_mock = MagicMock()
 
-    @pytest.mark.asyncio
     async def test_log_general(self):
-        test_func_name = 'log_decorator.test.test_async_log.TestAsyncLog.test_log_general.<locals>.test'
+        test_func_name = 'log_decorator.tests.test_async_log.TestAsyncLog.test_log_general.<locals>.test'
 
         test_arg1 = None
         test_arg2 = 1
@@ -23,7 +20,7 @@ class TestAsyncLog(unittest.IsolatedAsyncioTestCase):
         test_kwarg2 = 1
 
         @async_log.log(self.logger_inst_mock)
-        async def test(arg1, arg2: log.HIDE_ANNOTATION, *, kwarg1, kwarg2: log.HIDE_ANNOTATION):
+        async def test(arg1, arg2, *, kwarg1, kwarg2):
             return arg1, arg2, kwarg1, kwarg2
 
         result = await test(test_arg1, test_arg2, kwarg1=test_kwarg1, kwarg2=test_kwarg2)
@@ -38,17 +35,16 @@ class TestAsyncLog(unittest.IsolatedAsyncioTestCase):
                 'function': test_func_name,
                 'input_data': {
                     'arg1': str(test_arg1),
-                    'arg2': log.HIDDEN_VALUE,
+                    'arg2': test_arg2,
                     'kwarg1': test_kwarg1,
-                    'kwarg2': log.HIDDEN_VALUE,
+                    'kwarg2': test_kwarg2,
                 },
                 'result': (str(test_arg1), test_arg2, test_kwarg1, test_kwarg2),
             },
         )
 
-    @pytest.mark.asyncio
     async def test_log_track_exec_time(self):
-        test_func_name = 'log_decorator.test.test_async_log.TestAsyncLog.test_log_track_exec_time.<locals>.test'
+        test_func_name = 'log_decorator.tests.test_async_log.TestAsyncLog.test_log_track_exec_time.<locals>.test'
 
         @async_log.log(self.logger_inst_mock, track_exec_time=True)
         async def test():
@@ -70,9 +66,8 @@ class TestAsyncLog(unittest.IsolatedAsyncioTestCase):
             },
         )
 
-    @pytest.mark.asyncio
     async def test_log_frequency(self):
-        test_func_name = 'log_decorator.test.test_async_log.TestAsyncLog.test_log_frequency.<locals>.test'
+        test_func_name = 'log_decorator.tests.test_async_log.TestAsyncLog.test_log_frequency.<locals>.test'
 
         class TestException(Exception):
             pass
@@ -96,9 +91,8 @@ class TestAsyncLog(unittest.IsolatedAsyncioTestCase):
             },
         )
 
-    @pytest.mark.asyncio
     async def test_log_exception_hook(self):
-        test_func_name = 'log_decorator.test.test_async_log.TestAsyncLog.test_log_exception_hook.<locals>.test'
+        test_func_name = 'log_decorator.tests.test_async_log.TestAsyncLog.test_log_exception_hook.<locals>.test'
 
         test_exception_hook = AsyncMock()
 
@@ -126,11 +120,9 @@ class TestAsyncLog(unittest.IsolatedAsyncioTestCase):
             },
         )
 
-    # noinspection DuplicatedCode
-    @pytest.mark.asyncio
     async def test_log_with_exception_and_return(self):
-        test_func_name = 'log_decorator.test.test_async_log.TestAsyncLog.test_log_with_exception_and_return.<locals>.' \
-                         'test'
+        test_func_name = 'log_decorator.tests.test_async_log.TestAsyncLog.test_log_with_exception_and_return.' \
+                         '<locals>.test'
 
         @async_log.log(self.logger_inst_mock)
         async def test():

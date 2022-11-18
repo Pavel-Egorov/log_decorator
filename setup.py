@@ -3,7 +3,8 @@ import os
 from setuptools import setup
 
 
-def read(path):
+def read(path: str) -> str:
+    """Try to read file by path or return empty string."""
     try:
         with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), path)) as f:
             return f.read()
@@ -17,7 +18,7 @@ if __name__ == '__main__':
         description='decorators to log function calls in verbose manner',
         license='Apache',
         url='https://github.com/Pavel-Egorov/log_decorator',
-        version='1.0.1',
+        version='1.1.0',
         author='Pavel Egorov',
         author_email='paveg.sp@gmail.com',
         maintainer='Pavel Egorov',
@@ -38,14 +39,18 @@ if __name__ == '__main__':
             'Programming Language :: Python :: 3.7',
             'Programming Language :: Python :: 3.8',
             'Programming Language :: Python :: 3.9',
+            'Programming Language :: Python :: 3.10',
             'Topic :: Software Development :: Libraries :: Python Modules',
         ],
         install_requires=[
             'wrapt',
+            'ujson',
         ],
         tests_require=[
             'pytest',
             'pytest-asyncio',
             'pytest-cov',
+            'flake8',
+            'wemake-python-styleguide',
         ],
     )

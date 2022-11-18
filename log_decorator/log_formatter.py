@@ -1,64 +1,79 @@
-import json
 import logging
+from typing import Optional, Iterable
+from enum import Enum
+
+import ujson
+
+DEFAULT_MAX_LOG_LENGTH = 32000
 
 DEFAULT_SEPARATOR = f'\n\n{"=" * 50}\n\n'
 
-DEFAULT_MAX_LOG_LENGTH = 10000
+
+class FormatterMode(str, Enum):
+    """Available formatter modes."""
+
+    COMPACT = 'compact'
+    VERBOSE = 'verbose'
 
 
 class LogFormatter(logging.Formatter):
-    def __init__(
+    """Formatter to format log records in a human-readable way."""
+
+    def __init__(  # noqa: WPS211
         self,
-        formatter_mode='verbose',
-        limit_keys_to=('input_data', 'result'),
-        max_length=DEFAULT_MAX_LOG_LENGTH,
-        separator=DEFAULT_SEPARATOR,
+        formatter_mode: FormatterMode = FormatterMode.VERBOSE,
+        limit_keys_to: Optional[Iterable] = ('input_data', 'result'),
+        max_length: Optional[int] = DEFAULT_MAX_LOG_LENGTH,
+        separator: str = DEFAULT_SEPARATOR,
         **kwargs,
     ):
-        super(LogFormatter, self).__init__(**kwargs)
+        super(LogFormatter, self).__init__(**kwargs)  # noqa: WPS608
+
+        available_formatters = {
+            FormatterMode.COMPACT: self.compact_formatter,
+            FormatterMode.VERBOSE: self.verbose_formatter,
+        }
+        self.selected_formatter = available_formatters.get(formatter_mode)
+        if self.selected_formatter is None:
+            raise Exception(f'Formatter {formatter_mode} is unavailable')  # noqa: WPS454
 
         self.limit_keys_to = limit_keys_to
         self.max_length = max_length
-        self.separator = separator if separator is not None else ''
+        self.separator = separator
 
-        available_formatters = {
-            'compact': self.compact_formatter,
-            'verbose': self.verbose_formatter,
-        }
-        if formatter_mode not in available_formatters:
-            raise Exception(f'Formatter mode {formatter_mode} not found')
-        self.used_formatter = available_formatters[formatter_mode]
+    def format(self, record: logging.LogRecord) -> str:
+        """Converts log record to readable string."""
+        return self.selected_formatter(record)  # noqa
 
-    def format(self, record):
-        return self.used_formatter(record)  # noqa
-
-    def compact_formatter(self, record):
-        formatted = super(LogFormatter, self).format(record)
+    def compact_formatter(self, record: logging.LogRecord) -> str:
+        """Converts log record to single-line compact readable string for console output."""
+        formatted = super(LogFormatter, self).format(record)  # noqa: WPS608
 
         record_data = record.__dict__
         extra = {}
         for i, j in record_data.items():
-            if self.limit_keys_to is None or i in self.limit_keys_to:
+            if (self.limit_keys_to is None) or (i in self.limit_keys_to):
                 extra[i] = j
 
         return self._strip_message_if_needed(f'{formatted} {extra}')
 
-    def verbose_formatter(self, record):
+    def verbose_formatter(self, record: logging.LogRecord) -> str:
+        """Converts log record to multi-line verbose readable string for log storage."""
         record_data = record.__dict__
 
-        result = record.__dict__.get('msg', '')
+        result = record_data.get('msg', '')
         result += '\n' * 2
 
-        keys_to_log = self.limit_keys_to if self.limit_keys_to is not None else list(record_data)
-        for i in keys_to_log:
-            value = record_data.get(i)
-            if value is not None:
-                try:
-                    prepared_value = json.dumps(value, indent=2)
-                except TypeError:
-                    prepared_value = value
+        for i, j in record_data.items():
+            if (self.limit_keys_to is not None) and (i not in self.limit_keys_to):
+                continue
 
-                result += f'{self.separator}{str(i).upper().replace("_", " ")}:\n{prepared_value}'
+            try:
+                prepared_value = ujson.dumps(j, indent=2)
+            except TypeError:
+                prepared_value = j
+
+            result += f'{self.separator}{str(i).upper().replace("_", " ")}:\n{prepared_value}'
 
         result += self.separator
 
@@ -66,5 +81,5 @@ class LogFormatter(logging.Formatter):
 
     def _strip_message_if_needed(self, message):
         if self.max_length is not None and len(message) > self.max_length:
-            return f'{message[:self.max_length]}...'
+            return f'{message[:self.max_length-3]}...'
         return message

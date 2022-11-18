@@ -1,42 +1,52 @@
 import inspect
-import json
 import logging
 import re
 import time
 from copy import deepcopy
+from types import FunctionType
+from typing import Any, Callable, Iterable, List, Tuple
 from uuid import uuid1
 
+import ujson
 from wrapt import decorator
-
-HIDE_ANNOTATION = 'hide'
 
 HIDDEN_VALUE = 'hidden'
 
 SECONDS_TO_MS = 1000
 
-LOGS_COUNTER = {}
+LOWEST_LOG_LVL = 5
+
+LOGS_COUNTER = {}  # noqa: WPS407
 
 
-def get_logger(logger_name='service_logger'):
+def get_logger(logger_name: str = 'service_logger') -> logging.Logger:
+    """Get logger with specified name with disabled propagation to avoid several log records related to one event."""
     logger = logging.getLogger(logger_name)
     logger.propagate = False
     return logger
 
 
-def log(
-    logger_inst=get_logger(),
+def log(  # noqa: WPS211
+    logger_inst: logging.Logger = get_logger(),
     lvl: int = logging.INFO,
     *,
-    hide_output=False,
-    hidden_params=(),
-    exceptions_only=False,
-    track_exec_time=False,
-    frequency=None,
-    exception_hook=None,
-):
+    hide_output: bool = False,
+    hidden_params: Iterable = (),
+    exceptions_only: bool = False,
+    track_exec_time: bool = False,
+    frequency: int = None,
+    exception_hook: FunctionType = None,
+) -> Callable:
+    """
+    Decorator to trace function calls in logs.
+
+    It logs function call, function return and any exceptions with separate log records.
+    This high-level function is needed to pass additional parameters and customise _log behavior.
+    """
     # noinspection DuplicatedCode
     @decorator
-    def _log(wrapped, instance, args, kwargs):
+    def _log(wrapped: FunctionType, instance: Any, args: tuple[Any], kwargs: dict[str, Any]) -> Any:
+        """Actual implementation of the above decorator."""
         func_name = f'{wrapped.__module__}.{wrapped.__qualname__}'
         extra = {'call_id': uuid1().hex, 'function': func_name}
 
@@ -49,7 +59,7 @@ def log(
             if log_counter % frequency != 0:
                 send_log = False
 
-        try:
+        try:  # noqa: WPS229
             params = inspect.getfullargspec(wrapped)
             extra['input_data'] = get_logged_args(
                 params,
@@ -66,7 +76,7 @@ def log(
             if track_exec_time:
                 extra['execution_time_ms'] = int((time.time() - start_time) * SECONDS_TO_MS)
 
-            extra['result'] = normalize_for_log(result) if not hide_output else HIDDEN_VALUE
+            extra['result'] = HIDDEN_VALUE if hide_output else normalize_for_log(result)
 
             if send_log and not exceptions_only:
                 logger_inst.log(level=lvl, msg=f'return {func_name}', extra=extra)
@@ -89,74 +99,69 @@ def log(
     return _log
 
 
-def get_logged_args(params, args, kwargs, hidden_params):
+def get_logged_args(
+    params: inspect.FullArgSpec,
+    args: tuple[Any],
+    kwargs: dict[str, Any],
+    hidden_params: Iterable,
+) -> dict[str, Any]:
+    """Return dict with function call argument names and their values casted to primitive types."""
     result = {}
-    annotations = params.annotations
 
     for i, v in enumerate(args[:len(params.args)]):
         arg_name = params.args[i]
-        arg_value = _hide_items(v, arg_name, annotations, hidden_params)
+        arg_value = _hide_items(v, arg_name, hidden_params)
         result[arg_name] = normalize_for_log(arg_value)
 
     varargs = params.varargs
     if varargs:
-        if _hide_items(args[len(params.args):], varargs, annotations, hidden_params) == HIDDEN_VALUE:
+        if _hide_items(args[len(params.args):], varargs, hidden_params) == HIDDEN_VALUE:
             result['*args'] = f'hidden {len(args) - len(params.args)} args'
         else:
-            result['*args'] = tuple(normalize_for_log(i) for i in args[len(params.args):])
+            result['*args'] = tuple(normalize_for_log(i) for i in args[len(params.args):])  # noqa: WPS441
 
     for k, v in kwargs.items():
-        if params.varkw and k not in params.kwonlyargs and k not in params.args:
-            result[k] = HIDDEN_VALUE
-            continue
-        kwarg = _hide_items(v, k, annotations, hidden_params)
+        kwarg = _hide_items(v, k, hidden_params)
         result[k] = normalize_for_log(kwarg)
 
     return result
 
 
-def normalize_for_log(value):
+def normalize_for_log(value: Any) -> Any:
+    """Cast any value to a primitive type."""
     if isinstance(value, bool) or value is None:
         return str(value)
     elif isinstance(value, dict):
         return {k: normalize_for_log(v) for k, v in value.items()}
     elif isinstance(value, (list, set, frozenset, tuple)):
         return type(value)(normalize_for_log(i) for i in value)
-    else:
-        return _get_log_repr(value)
+
+    return _get_log_repr(value)
 
 
-def _get_log_repr(value):
+def _get_log_repr(value: Any) -> Any:
+    """Cast value of complex type to a primitive type."""
+    if inspect.isclass(value):
+        return str(value)
+
     has_log_id = hasattr(value, 'get_log_id')
     if has_log_id:
         return value.get_log_id()
 
     try:
-        json.dumps(value)
-        return value
+        ujson.dumps(value)
     except TypeError:
         return str(value)
 
+    return value
 
-def _hide_items(item, item_name, annotations, hidden_params):
+
+def _hide_items(item: Any, item_name: str, hidden_params: Iterable) -> Any:
+    """Hide items according go configuration."""
     if item_name in hidden_params:
         return HIDDEN_VALUE
 
-    item_annotation = annotations.get(item_name)
-
-    if item_annotation is None or isinstance(item_annotation, type):
-        hide_annotation = []
-    elif isinstance(item_annotation, str):
-        hide_annotation = [item_annotation]
-    else:
-        hide_annotation = item_annotation
-
     hide_pointers = []
-    for i in hide_annotation:
-        if i == HIDE_ANNOTATION:
-            return HIDDEN_VALUE
-        if re.match(HIDE_ANNOTATION, str(i)):
-            hide_pointers.append(i.split('__')[1:])
 
     for i in hidden_params:
         if re.match(item_name, i):
@@ -172,17 +177,17 @@ def _hide_items(item, item_name, annotations, hidden_params):
         try:
             result = _hide_items_impl(result, i)
         except (KeyError, IndexError):
-            continue
+            pass
 
     return result
 
 
-def _hide_items_impl(item, pointers):
+def _hide_items_impl(item: Any, pointers: List | Tuple):
     pointer = pointers[0]
     if isinstance(item, list):
         pointer = int(pointer)
 
-    if (isinstance(item[pointer], dict) or isinstance(item[pointer], list)) and len(pointers) > 1:
+    if isinstance(item[pointer], (dict, list)) and len(pointers) > 1:
         item[pointer] = _hide_items_impl(item[pointer], pointers[1:])
     else:
         item[pointer] = HIDDEN_VALUE

@@ -22,7 +22,7 @@ class TestLog(TestCase):
         self.assertEqual(logger.name, 'service_logger')
 
     def test_log_general(self):
-        test_func_name = 'log_decorator.test.test_log.TestLog.test_log_general.<locals>.test'
+        test_func_name = 'log_decorator.tests.test_log.TestLog.test_log_general.<locals>.test'
 
         test_arg1 = None
         test_arg2 = 1
@@ -32,7 +32,7 @@ class TestLog(TestCase):
         test_kwarg3 = {'kwarg3': 1}
 
         @log.log(self.logger_inst_mock)
-        def test(arg1, arg2: log.HIDE_ANNOTATION, *args, kwarg1, kwarg2: log.HIDE_ANNOTATION, **varkw):
+        def test(arg1, arg2, *args, kwarg1, kwarg2, **varkw):
             return arg1, arg2, args, kwarg1, kwarg2, varkw
 
         with patch('log_decorator.log.uuid1', self.uuid1_mock):
@@ -48,23 +48,23 @@ class TestLog(TestCase):
                 'function': test_func_name,
                 'input_data': {
                     'arg1': str(test_arg1),
-                    'arg2': log.HIDDEN_VALUE,
+                    'arg2': test_arg2,
                     '*args': (test_arg3,),
                     'kwarg1': test_kwarg1,
-                    'kwarg2': log.HIDDEN_VALUE,
-                    'kwarg3': log.HIDDEN_VALUE,
+                    'kwarg2': test_kwarg2,
+                    'kwarg3': test_kwarg3['kwarg3'],
                 },
                 'result': (str(test_arg1), test_arg2, (test_arg3,), test_kwarg1, test_kwarg2, test_kwarg3),
             },
         )
 
     def test_log_with_hidden_varargs(self):
-        test_func_name = 'log_decorator.test.test_log.TestLog.test_log_with_hidden_varargs.<locals>.test'
+        test_func_name = 'log_decorator.tests.test_log.TestLog.test_log_with_hidden_varargs.<locals>.test'
 
         test_arg1 = 1
 
-        @log.log(self.logger_inst_mock)
-        def test(*args: log.HIDE_ANNOTATION):
+        @log.log(self.logger_inst_mock, hidden_params=['args'])
+        def test(*args):
             return args
 
         result = test(test_arg1)
@@ -84,18 +84,22 @@ class TestLog(TestCase):
         )
 
     def test_log_with_hidden_nested_structure(self):
-        test_func_name = 'log_decorator.test.test_log.TestLog.test_log_with_hidden_nested_structure.<locals>.test'
+        test_func_name = 'log_decorator.tests.test_log.TestLog.test_log_with_hidden_nested_structure.<locals>.test'
 
         test_arg = [[1], ['test']]
         test_kwarg = {'test': {'test_token': 12345, 'test_info': 'info'}}
         test_kwarg_1 = {'test': {'t': ['123'], 'x': 'x'}, 'test1': 123}
 
-        # noinspection PyUnresolvedReferences
-        @log.log(self.logger_inst_mock)
+        @log.log(self.logger_inst_mock, hidden_params=[
+            'arg__1__0',
+            'kwarg__test__test_token',
+            'kwarg1__test1',
+            'kwarg1__test__t',
+        ])
         def test(
-            arg: f'{log.HIDE_ANNOTATION}__1__0',
-            kwarg: f'{log.HIDE_ANNOTATION}__test__test_token',
-            kwarg1: [f'{log.HIDE_ANNOTATION}__test1', f'{log.HIDE_ANNOTATION}__test__t'],
+            arg,
+            kwarg,
+            kwarg1,
         ):
             return arg, kwarg, kwarg1
 
@@ -118,40 +122,8 @@ class TestLog(TestCase):
             },
         )
 
-    def test_log_without_hidden_annotations(self):
-        test_func_name = 'log_decorator.test.test_log.TestLog.test_log_without_hidden_annotations.<locals>.test'
-
-        test_arg = ['test']
-        test_kwarg = {'test': 123}
-
-        # noinspection PyUnresolvedReferences
-        @log.log(self.logger_inst_mock)
-        def test(
-            arg: list,
-            kwarg: 'test__test',
-        ):
-            return arg, kwarg
-
-        result = test(test_arg, kwarg=test_kwarg)
-
-        self.assertEqual(result, (test_arg, test_kwarg))
-
-        self.logger_inst_mock.log.assert_called_with(
-            level=logging.INFO,
-            msg=f'return {test_func_name}',
-            extra={
-                'call_id': ANY,
-                'function': test_func_name,
-                'input_data': {
-                    'arg': ['test'],
-                    'kwarg': {'test': 123},
-                },
-                'result': (test_arg, test_kwarg),
-            },
-        )
-
     def test_log_hide_output(self):
-        test_func_name = 'log_decorator.test.test_log.TestLog.test_log_hide_output.<locals>.test'
+        test_func_name = 'log_decorator.tests.test_log.TestLog.test_log_hide_output.<locals>.test'
 
         @log.log(self.logger_inst_mock, hide_output=True)
         def test():
@@ -173,7 +145,7 @@ class TestLog(TestCase):
         )
 
     def test_log_hidden_params(self):
-        test_func_name = 'log_decorator.test.test_log.TestLog.test_log_hidden_params.<locals>.test'
+        test_func_name = 'log_decorator.tests.test_log.TestLog.test_log_hidden_params.<locals>.test'
 
         test_arg = [[1], ['test']]
         test_arg_1 = [[1], ['test']]
@@ -181,7 +153,6 @@ class TestLog(TestCase):
         test_kwarg = {'test': {'test_token': 12345, 'test_info': 'info'}}
         test_kwarg_1 = {'test': {'t': ['123'], 'x': 'x'}, 'test1': 123}
 
-        # noinspection PyUnresolvedReferences
         @log.log(self.logger_inst_mock, hidden_params=[
             'arg__1__0',
             'arg_2',
@@ -189,7 +160,7 @@ class TestLog(TestCase):
             'kwarg1__test1',
             'kwarg1__test__t',
         ])
-        def test(arg, arg_1: f'{log.HIDE_ANNOTATION}__1__1', arg_2, kwarg, kwarg1):
+        def test(arg, arg_1, arg_2, kwarg, kwarg1):
             return arg, arg_1, arg_2, kwarg, kwarg1
 
         result = test(test_arg, test_arg_1, test_arg_2, kwarg=test_kwarg, kwarg1=test_kwarg_1)
@@ -214,7 +185,7 @@ class TestLog(TestCase):
         )
 
     def test_log_track_exec_time(self):
-        test_func_name = 'log_decorator.test.test_log.TestLog.test_log_track_exec_time.<locals>.test'
+        test_func_name = 'log_decorator.tests.test_log.TestLog.test_log_track_exec_time.<locals>.test'
 
         @log.log(self.logger_inst_mock, track_exec_time=True)
         def test():
@@ -237,7 +208,7 @@ class TestLog(TestCase):
         )
 
     def test_log_frequency(self):
-        test_func_name = 'log_decorator.test.test_log.TestLog.test_log_frequency.<locals>.test'
+        test_func_name = 'log_decorator.tests.test_log.TestLog.test_log_frequency.<locals>.test'
 
         @log.log(self.logger_inst_mock, frequency=2)
         def test():
@@ -272,9 +243,8 @@ class TestLog(TestCase):
         test_datetime = datetime.utcnow()
         self.assertEqual(log.normalize_for_log(test_datetime), str(test_datetime))
 
-    # noinspection DuplicatedCode
     def test_log_with_exception(self):
-        test_func_name = 'log_decorator.test.test_log.TestLog.test_log_with_exception.<locals>.test'
+        test_func_name = 'log_decorator.tests.test_log.TestLog.test_log_with_exception.<locals>.test'
 
         class TestException(Exception):
             pass
@@ -304,9 +274,8 @@ class TestLog(TestCase):
             },
         )
 
-    # noinspection DuplicatedCode
     def test_log_with_exception_and_return(self):
-        test_func_name = 'log_decorator.test.test_log.TestLog.test_log_with_exception_and_return.<locals>.test'
+        test_func_name = 'log_decorator.tests.test_log.TestLog.test_log_with_exception_and_return.<locals>.test'
 
         @log.log(self.logger_inst_mock)
         def test():
@@ -338,7 +307,7 @@ class TestLog(TestCase):
         )
 
     def test_log_exception_hook(self):
-        test_func_name = 'log_decorator.test.test_log.TestLog.test_log_exception_hook.<locals>.test'
+        test_func_name = 'log_decorator.tests.test_log.TestLog.test_log_exception_hook.<locals>.test'
 
         test_exception_hook = MagicMock()
 
@@ -360,7 +329,7 @@ class TestLog(TestCase):
         )
 
     def test_log_exception_only(self):
-        test_func_name = 'log_decorator.test.test_log.TestLog.test_log_exception_only.<locals>.test'
+        test_func_name = 'log_decorator.tests.test_log.TestLog.test_log_exception_only.<locals>.test'
 
         @log.log(self.logger_inst_mock, exceptions_only=True)
         def test():
