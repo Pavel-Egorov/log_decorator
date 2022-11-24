@@ -69,7 +69,7 @@ class LogFormatter(logging.Formatter):
                 continue
 
             try:
-                prepared_value = ujson.dumps(j, indent=2)
+                prepared_value = ujson.dumps(j, indent=2, ensure_ascii=False)
             except TypeError:
                 prepared_value = j
 

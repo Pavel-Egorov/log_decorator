@@ -154,6 +154,10 @@ def log(...) -> async_log_decorator_implementation
 
 Look at sync log for signature description, the only difference is that exception_hook should be async if passed.
 
+This decorator doesn't provide async logging, but only async function calls.
+To use with async code consider either stdout/UDP inputs or use approach like:
+[non-blocking handlers](https://docs.python.org/3/howto/logging-cookbook.html#dealing-with-handlers-that-block).
+
 ---
 
 Additional features:

@@ -24,6 +24,10 @@ def log(  # noqa: WPS211
     """
     Decorator to trace async function calls in logs.
 
+    This decorator doesn't provide async logging, but only async function calls.
+    To use with async code consider either stdout/UDP inputs or use approach like:
+    https://docs.python.org/3/howto/logging-cookbook.html#dealing-with-handlers-that-block
+
     It logs function call, function return and any exceptions with separate log records.
     This high-level function is needed to pass additional parameters and customise _log behavior.
     """
