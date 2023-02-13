@@ -129,6 +129,8 @@ def log(
 - `lvl` - logging level, function calls and returns will be logged with this level, exceptions will be logger with 
   `ERROR` level.
 - `hide_output` - if `True` then result of the function call will be completely hidden in log.
+- `minify_logs` - if `True` then logs would be minified to reduce storage consumption.
+- `hide_input_from_return` - if `True` then return log will not contain input arguments.
 - `hidden_params` - pass iterable of strings to hide some arguments or their parts from the log. To hide part of an 
   argument use `__` to access key or index in dict or in an iterable and then its name/index, e.g. if you will pass 
   `hidden_params=['test__key__1']` to log decorator and call function with argument `test={'key': [1,2,3]}` then in 

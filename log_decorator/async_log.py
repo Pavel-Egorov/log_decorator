@@ -1,6 +1,7 @@
 import inspect
 import logging
 import time
+from copy import deepcopy
 from types import FunctionType
 from typing import Any, Iterable, Callable
 from uuid import uuid1
@@ -15,6 +16,8 @@ def log(  # noqa: WPS211
     lvl: int = logging.INFO,
     *,
     hide_output: bool = False,
+    minify_logs: bool = False,
+    hide_input_from_return: bool = False,
     hidden_params: Iterable = (),
     exceptions_only: bool = False,
     track_exec_time: bool = False,
@@ -37,6 +40,8 @@ def log(  # noqa: WPS211
         """Actual implementation of the above decorator."""
         func_name = f'{wrapped.__module__}.{wrapped.__qualname__}'
         extra = {'call_id': uuid1().hex, 'function': func_name}
+
+        _hide_input_from_return = hide_input_from_return if not minify_logs else True
 
         send_log = True
 
@@ -68,7 +73,10 @@ def log(  # noqa: WPS211
             extra['result'] = HIDDEN_VALUE if hide_output else normalize_for_log(result)
 
             if send_log and not exceptions_only:
-                logger_inst.log(level=lvl, msg=f'return {func_name}', extra=extra)
+                return_extra = deepcopy(extra)
+                if _hide_input_from_return:
+                    return_extra['input_data'] = HIDDEN_VALUE
+                logger_inst.log(level=lvl, msg=f'return {func_name}', extra=return_extra)
 
             return result
         except Exception as exc:  # noqa

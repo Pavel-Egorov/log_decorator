@@ -144,6 +144,50 @@ class TestLog(TestCase):
             },
         )
 
+    def test_log_minify_logs(self):
+        test_func_name = 'log_decorator.tests.test_log.TestLog.test_log_minify_logs.<locals>.test'
+
+        @log.log(self.logger_inst_mock, minify_logs=True)
+        def test():
+            return
+
+        result = test()
+
+        self.assertIsNone(result)
+
+        self.logger_inst_mock.log.assert_called_with(
+            level=logging.INFO,
+            msg=f'return {test_func_name}',
+            extra={
+                'call_id': ANY,
+                'function': test_func_name,
+                'input_data': log.HIDDEN_VALUE,
+                'result': 'None',
+            },
+        )
+
+    def test_log_hide_input_from_return(self):
+        test_func_name = 'log_decorator.tests.test_log.TestLog.test_log_hide_input_from_return.<locals>.test'
+
+        @log.log(self.logger_inst_mock, hide_input_from_return=True)
+        def test():
+            return
+
+        result = test()
+
+        self.assertIsNone(result)
+
+        self.logger_inst_mock.log.assert_called_with(
+            level=logging.INFO,
+            msg=f'return {test_func_name}',
+            extra={
+                'call_id': ANY,
+                'function': test_func_name,
+                'input_data': log.HIDDEN_VALUE,
+                'result': 'None',
+            },
+        )
+
     def test_log_hidden_params(self):
         test_func_name = 'log_decorator.tests.test_log.TestLog.test_log_hidden_params.<locals>.test'
 

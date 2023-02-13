@@ -91,6 +91,50 @@ class TestAsyncLog(unittest.IsolatedAsyncioTestCase):
             },
         )
 
+    async def test_log_minify_logs(self):
+        test_func_name = 'log_decorator.tests.test_async_log.TestAsyncLog.test_log_minify_logs.<locals>.test'
+
+        @async_log.log(self.logger_inst_mock, minify_logs=True)
+        async def test():
+            return
+
+        result = await test()
+
+        self.assertIsNone(result)
+
+        self.logger_inst_mock.log.assert_called_with(
+            level=logging.INFO,
+            msg=f'return {test_func_name}',
+            extra={
+                'call_id': ANY,
+                'function': test_func_name,
+                'input_data': log.HIDDEN_VALUE,
+                'result': 'None',
+            },
+        )
+
+    async def test_log_hide_input_from_return(self):
+        test_func_name = 'log_decorator.tests.test_async_log.TestAsyncLog.test_log_hide_input_from_return.<locals>.test'
+
+        @async_log.log(self.logger_inst_mock, hide_input_from_return=True)
+        async def test():
+            return
+
+        result = await test()
+
+        self.assertIsNone(result)
+
+        self.logger_inst_mock.log.assert_called_with(
+            level=logging.INFO,
+            msg=f'return {test_func_name}',
+            extra={
+                'call_id': ANY,
+                'function': test_func_name,
+                'input_data': log.HIDDEN_VALUE,
+                'result': 'None',
+            },
+        )
+
     async def test_log_exception_hook(self):
         test_func_name = 'log_decorator.tests.test_async_log.TestAsyncLog.test_log_exception_hook.<locals>.test'
 
