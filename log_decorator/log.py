@@ -165,7 +165,7 @@ def _get_log_repr(value: Any) -> Any:
 
 
 def _hide_items(item: Any, item_name: str, hidden_params: Iterable) -> Any:
-    """Hide items according go configuration."""
+    """Hide items according to configuration."""
     if item_name in hidden_params:
         return HIDDEN_VALUE
 
